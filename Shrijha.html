@@ -1,0 +1,205 @@
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Frame, PageTemplate, BaseDocTemplate
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+# Define colors based on the HTML design
+BG_COLOR = colors.HexColor("#fffde7")
+BORDER_COLOR = colors.HexColor("#d4af37")
+HEADER_COLOR = colors.HexColor("#800000")
+TEXT_COLOR = colors.HexColor("#333333")
+LABEL_COLOR = colors.HexColor("#555555")
+
+def draw_background(canvas, doc):
+    """Draws the yellow background and gold border on every page."""
+    canvas.saveState()
+    w, h = A4
+    
+    # 1. Fill Background
+    canvas.setFillColor(BG_COLOR)
+    canvas.rect(0, 0, w, h, fill=1, stroke=0)
+    
+    # 2. Draw Main Border (Inset by 20 points)
+    margin = 20
+    canvas.setStrokeColor(BORDER_COLOR)
+    canvas.setLineWidth(3)
+    canvas.rect(margin, margin, w - 2*margin, h - 2*margin)
+    
+    # 3. Draw Inner Decorative Border (Thin line)
+    canvas.setLineWidth(1)
+    canvas.rect(margin + 4, margin + 4, w - 2*(margin + 4), h - 2*(margin + 4))
+    
+    canvas.restoreState()
+
+def create_profile_pdf(filename):
+    # Setup the document with margins that fit inside the border
+    doc = BaseDocTemplate(filename, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
+    
+    # Define a Frame and PageTemplate to apply the background
+    frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+    template = PageTemplate(id='background', frames=frame, onPage=draw_background)
+    doc.addPageTemplates([template])
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    
+    # Title Styles
+    title_style = ParagraphStyle(
+        'Title', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=28,
+        textColor=HEADER_COLOR, alignment=TA_CENTER, spaceAfter=2
+    )
+    subtitle_style = ParagraphStyle(
+        'Subtitle', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=14,
+        textColor=colors.darkgray, alignment=TA_CENTER, spaceAfter=30
+    )
+    
+    # Section Header Style
+    section_style = ParagraphStyle(
+        'Section', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=14,
+        textColor=HEADER_COLOR, spaceAfter=10, spaceBefore=15,
+        borderWidth=0, borderPadding=0
+    )
+    
+    # Data Row Styles
+    label_style = ParagraphStyle('Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, textColor=LABEL_COLOR, leading=14)
+    value_style = ParagraphStyle('Value', parent=styles['Normal'], fontName='Helvetica', fontSize=11, textColor=TEXT_COLOR, leading=14)
+    
+    story = []
+    
+    # --- Header ---
+    story.append(Paragraph("SHRIJHA SR", title_style))
+    story.append(Paragraph("Matrimonial Profile", subtitle_style))
+    story.append(Spacer(1, 10))
+    
+    # Helper to create a two-column row (Label | Value)
+    def create_row(label, value):
+        p_label = Paragraph(label, label_style)
+        p_value = Paragraph(value, value_style)
+        # Using a table for alignment
+        t = Table([[p_label, p_value]], colWidths=[1.5*inch, 3.5*inch])
+        t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ]))
+        return t
+
+    # --- Top Section: Personal & Religious (Side by Side) ---
+    # Left Column Data
+    left_content = [
+        Paragraph("PERSONAL DETAILS", section_style),
+        create_row("Date of Birth:", "09-07-2001"),
+        create_row("Time:", "9:09 AM"),
+        create_row("Place:", "Chennai, Tamil Nadu"),
+        create_row("Height / Weight:", "5.6 ft / 60 Kgs"),
+        create_row("Complexion:", "Fair"),
+        create_row("Mother Tongue:", "Tamil"),
+    ]
+    
+    # Right Column Data
+    right_content = [
+        Paragraph("RELIGIOUS INFO", section_style),
+        create_row("Caste / Sect:", "Iyer (Vathimal)"),
+        create_row("Gothram:", "Goudanya"),
+        create_row("Star:", "Avittam"),
+        create_row("Rasi:", "Kumbam (Aquarius)"),
+        create_row("Lagna:", "Simham (Leo)"),
+    ]
+    
+    # Place them in a grid
+    grid_data = [[
+        Table([[item] for item in left_content], colWidths=[3.2*inch]),
+        Table([[item] for item in right_content], colWidths=[3.2*inch])
+    ]]
+    
+    top_grid = Table(grid_data, colWidths=[3.5*inch, 3.5*inch])
+    top_grid.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    story.append(top_grid)
+    
+    # --- Middle Section: Education & Family ---
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("EDUCATION & CAREER", section_style))
+    story.append(create_row("Qualification:", "B.Sc (Physician Assistant)"))
+    story.append(create_row("Current Status:", "Pursuing Masters Degree at University of Chester (UK)"))
+    story.append(create_row("Interests:", "Music, Fitness"))
+    
+    story.append(Spacer(1, 5))
+    story.append(Paragraph("FAMILY DETAILS", section_style))
+    story.append(create_row("Father:", "S. Ramanan (Senior Lead in MNC)"))
+    story.append(create_row("Mother:", "Vidhyalakshmi (Homemaker)"))
+    story.append(create_row("Siblings:", "Single Child"))
+    story.append(create_row("Family Status:", "Traditional, Affluent"))
+    story.append(create_row("Nativity:", "Chennai"))
+    
+    story.append(Spacer(1, 20))
+
+    # --- Bottom Section: Chart & Expectations ---
+    
+    # 1. CHART (South Indian Format)
+    # Styles for Chart Cells
+    chart_cell_style = ParagraphStyle('ChartCell', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER, leading=10)
+    chart_header_style = ParagraphStyle('ChartHeader', parent=section_style, fontSize=12, alignment=TA_CENTER)
+    
+    # Helper to wrap text
+    def c(text): 
+        return Paragraph(text, chart_cell_style)
+    
+    # The Chart Grid (4x4)
+    # Row 1: Pisces, Aries, Taurus, Gemini
+    # Row 2: Aquarius, CENTER, Cancer
+    # Row 3: Capricorn, CENTER, Leo
+    # Row 4: Sagittarius, Scorpio, Libra, Virgo
+    
+    # Center text with OM
+    center_text = Paragraph("<br/><br/><b>OM</b>", ParagraphStyle('Center', fontName='Helvetica-Bold', fontSize=18, alignment=TA_CENTER, textColor=HEADER_COLOR))
+
+    raw_chart = [
+        [c(''), c(''), c('Venus<br/>Saturn'), c('Sun, Merc<br/>Jup, Rahu')],
+        [c('Moon'), center_text, '', c('')], # Middle cells merged later
+        [c(''), '', '', c('<b>Lagna</b>')],   # Middle cells merged later
+        [c('Ketu'), c('Mars'), c(''), c('')]
+    ]
+    
+    chart_table = Table(raw_chart, colWidths=[0.7*inch]*4, rowHeights=[0.7*inch]*4)
+    chart_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 1, HEADER_COLOR),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        # Span the center 2x2 cells
+        ('SPAN', (1,1), (2,2)),
+        ('BACKGROUND', (1,1), (2,2), BG_COLOR), # Match bg color
+    ]))
+    
+    chart_stack = [Paragraph("RASI CHART", chart_header_style), Spacer(1, 5), chart_table]
+
+    # 2. EXPECTATIONS
+    exp_text = """Seeking a well-educated, professionally stable groom from a good Iyer / Brahmin family with strong family values and a modern outlook."""
+    exp_stack = [
+        Paragraph("EXPECTATIONS", section_style),
+        Paragraph(exp_text, ParagraphStyle('Exp', parent=styles['Normal'], fontSize=12, leading=18, textColor=TEXT_COLOR))
+    ]
+    
+    # Combine Chart (Left) and Expectations (Right)
+    bottom_grid_data = [[
+        Table([[x] for x in chart_stack], colWidths=[3.0*inch]),
+        Table([[x] for x in exp_stack], colWidths=[3.5*inch])
+    ]]
+    
+    bottom_grid = Table(bottom_grid_data, colWidths=[3.2*inch, 3.8*inch])
+    bottom_grid.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (1,0), (1,0), 20) # Add padding between chart and text
+    ]))
+    
+    story.append(bottom_grid)
+    
+    # --- Footer ---
+    story.append(Spacer(1, 40))
+    footer = Paragraph("Profile created for Shrijha SR", ParagraphStyle('Footer', parent=styles['Normal'], alignment=TA_CENTER, textColor=colors.gray, fontSize=9))
+    story.append(footer)
+
+    doc.build(story)
+
+create_profile_pdf("Matrimony_Profile_Shrijha_SR.pdf")
