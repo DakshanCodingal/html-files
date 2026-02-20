@@ -1,0 +1,19 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <p>Sum of arguments and Math objects</p>
+<p id="demo"></p>
+<script>
+function sumAll() {
+    var sum = 0;
+    for (var i = 0; i < arguments.length; i++) {
+        sum += arguments[i];
+    }
+    return sum;
+}
+document.getElementById("demo").innerHTML = sumAll(5,10,15,20);
+</script>       
+    </body>      
+</html>
