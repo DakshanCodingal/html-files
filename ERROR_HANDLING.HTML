@@ -1,0 +1,18 @@
+<HTML>
+    <HEAD>
+
+    </HEAD>
+    <BODY>
+        <H2> JAVASCRIPT ERROR HANDLING </H2>
+        <P> THIS EXAMPLE DEMONSTRATES HOW TO USE <B> CATCH </B> TO DISPLAY AN ERROR. </P>
+        <P id="error_message"></P>
+        <SCRIPT>
+            try{
+                addalert("welcome guest!");
+            }
+            catch(err){
+                document.getElementById("error_message").innerHTML = err.message;
+            }
+        </SCRIPT>
+    </BODY>
+</HTML>
